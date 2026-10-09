@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>4Health - Creare cont</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/app.css">
+  <style> body { padding: 24px 16px; } .card { max-width: 460px; width: 100%; } </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>Creare cont nou</h1>
+    <p class="lead">Completează datele pentru a-ți crea contul</p>
+
+    <div class="row" style="margin-bottom:16px">
+      <button type="button" id="tabPacient" class="btn btn-primary">Sunt pacient</button>
+      <button type="button" id="tabDoctor" class="btn btn-outline">Sunt medic</button>
+    </div>
+
+    <form id="registerForm" autocomplete="off" novalidate>
+      <label for="nume">Nume</label>
+      <input id="nume" type="text" placeholder="Popescu" required />
+
+      <label for="prenume">Prenume</label>
+      <input id="prenume" type="text" placeholder="Ion" required />
+
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="ion.popescu@exemplu.ro" required />
+
+      <label for="parola">Parolă</label>
+      <input id="parola" type="password" placeholder="Minim 6 caractere" required minlength="6" />
+
+      <div id="pacientFields">
+        <label for="cnp">CNP <span class="muted">(opțional, ajută medicul să te găsească)</span></label>
+        <input id="cnp" type="text" inputmode="numeric" pattern="\d{13}" maxlength="13" placeholder="13 cifre" />
+
+        <label for="medic">Medic de familie</label>
+        <select id="medic">
+          <option value="">-- Alege medicul de familie --</option>
+        </select>
+
+        <label for="alergii">Alergii cunoscute <span class="muted">(opțional)</span></label>
+        <input id="alergii" type="text" placeholder="ex. penicilină, polen" />
+      </div>
+
+      <div id="doctorFields" class="hidden">
+        <label for="specialitate">Specializare</label>
+        <select id="specialitate"></select>
+
+        <label for="clinica">Clinică / cabinet</label>
+        <input id="clinica" type="text" placeholder="Clinica 4Health - Titan" />
+
+        <label for="oras">Oraș</label>
+        <input id="oras" type="text" placeholder="București" />
+
+        <label for="invite">Cod de invitație pentru medici</label>
+        <input id="invite" type="text" placeholder="primit de la administrator" />
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <button type="submit" id="btnSubmit" class="btn btn-primary">Creează cont</button>
+        <a href="index.html" class="btn btn-outline" style="text-align:center;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit">Înapoi</a>
+      </div>
+    </form>
+
+    <div id="result" class="hidden" aria-live="polite"></div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    let role = "patient";
+    const $ = (id) => document.getElementById(id);
+
+    function setRole(r) {
+      role = r;
+      $("pacientFields").classList.toggle("hidden", r !== "patient");
+      $("doctorFields").classList.toggle("hidden", r !== "doctor");
+      $("tabPacient").className = "btn " + (r === "patient" ? "btn-primary" : "btn-outline");
+      $("tabDoctor").className = "btn " + (r === "doctor" ? "btn-primary" : "btn-outline");
+    }
+    $("tabPacient").onclick = () => setRole("patient");
+    $("tabDoctor").onclick = () => setRole("doctor");
+
+    // Medicii de familie și specializările vin din baza de date
+    (async () => {
+      try {
+        const [docs, specs] = await Promise.all([
+          api("/api/doctors?specialty=medicina_familie", { auth: false }),
+          api("/api/specialties", { auth: false }),
+        ]);
+        $("medic").insertAdjacentHTML("beforeend", docs.map(d => `<option value="${d.id}">${esc(d.name)} - ${esc(d.clinic)}</option>`).join(""));
+        $("specialitate").innerHTML = specs.map(s => `<option value="${s.key}">${esc(s.label)}</option>`).join("");
+      } catch (e) {
+        $("result").className = "error-box";
+        $("result").textContent = "Serverul nu răspunde. Pornește backend-ul (vezi README).";
+      }
+    })();
+
+    $("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      if (!form.checkValidity()) return form.reportValidity();
+      const body = {
+        role,
+        last_name: $("nume").value.trim(),
+        first_name: $("prenume").value.trim(),
+        email: $("email").value.trim(),
+        password: $("parola").value,
+      };
+      if (role === "patient") {
+        body.cnp = $("cnp").value.trim() || null;
+        body.family_doctor_id = $("medic").value ? Number($("medic").value) : null;
+        body.allergies = $("alergii").value.trim();
+      } else {
+        Object.assign(body, { specialty: $("specialitate").value, clinic: $("clinica").value.trim(),
+          city: $("oras").value.trim(), invite_code: $("invite").value.trim() });
+      }
+      $("btnSubmit").disabled = true;
+      try {
+        const data = await api("/api/auth/register", { method: "POST", body, auth: false });
+        Auth.save(data);
+        location.href = Auth.homeFor(data.role);
+      } catch (err) {
+        $("result").className = "error-box";
+        $("result").textContent = err.message;
+      } finally {
+        $("btnSubmit").disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

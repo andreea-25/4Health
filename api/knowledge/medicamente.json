@@ -1,0 +1,125 @@
+{
+  "_info": "Rezumate educaționale scrise pentru proiectul demo 4Health, pe baza informațiilor generale din prospecte. NU sunt prospecte oficiale. Pentru producție, înlocuiește-le cu Rezumatul Caracteristicilor Produsului (RCP) / prospectul oficial de pe nomenclatorul ANMDMR (www.anm.ro).",
+  "drugs": [
+    {
+      "key": "amoxicilina",
+      "name": "Amoxicilină",
+      "aliases": ["amoxicilina", "amoxicillin", "ospamox", "amoxil"],
+      "classes": ["antibiotic", "penicilina", "beta-lactamina"],
+      "sections": {
+        "ce_este": "Amoxicilina este un antibiotic din familia penicilinelor. Se folosește pentru infecții bacteriene (de exemplu unele infecții ale gâtului, urechii, sinusurilor, căilor urinare sau respiratorii). Nu are efect asupra virozelor, cum sunt răceala obișnuită sau gripa.",
+        "administrare": "Se ia exact la intervalele stabilite de medic, de obicei la ore cât mai egal distanțate. Poate fi luată cu sau fără mâncare. Tratamentul trebuie dus până la capăt, chiar dacă simptomele dispar mai devreme, pentru ca infecția să nu revină și pentru a reduce riscul de rezistență la antibiotice.",
+        "atentionari": "Nu se ia dacă ai alergie la penicilină sau la alte beta-lactamine. Dacă apar umflarea feței, buzelor sau gâtului, greutate în respirație sau erupție severă, oprește administrarea și sună la 112. Efecte frecvente: diaree, greață, erupție ușoară pe piele. Diareea severă sau cu sânge trebuie anunțată imediat medicului.",
+        "interactiuni": "Spune medicului dacă iei anticoagulante (de ex. warfarină), metotrexat sau alopurinol. Nu împărți antibioticul cu alte persoane și nu păstra resturi pentru altă dată."
+      }
+    },
+    {
+      "key": "ibuprofen",
+      "name": "Ibuprofen",
+      "aliases": ["ibuprofen", "nurofen", "ibalgin", "advil", "paduden"],
+      "classes": ["antiinflamator nesteroidian", "ains"],
+      "sections": {
+        "ce_este": "Ibuprofenul este un antiinflamator nesteroidian (AINS). Reduce durerea, febra și inflamația (de exemplu dureri de cap, dentare, musculare, menstruale).",
+        "administrare": "Se ia de preferat după masă sau cu un pahar de lapte, pentru a proteja stomacul. Se folosește cea mai mică doză eficientă, pe cea mai scurtă durată. Fără recomandare medicală, nu se folosește mai mult de câteva zile.",
+        "atentionari": "Atenție la ulcer sau sângerări digestive în trecut, boli de rinichi, ficat sau inimă, hipertensiune necontrolată, astm agravat de AINS și în ultimul trimestru de sarcină. Scaunul negru, vărsăturile cu sânge sau durerea puternică de stomac sunt urgențe.",
+        "interactiuni": "Nu se combină cu alte AINS (de ex. diclofenac, aspirină în doze mari) fără acordul medicului. Crește riscul de sângerare cu anticoagulantele și poate scădea efectul unor medicamente pentru tensiune (de ex. enalapril)."
+      }
+    },
+    {
+      "key": "paracetamol",
+      "name": "Paracetamol",
+      "aliases": ["paracetamol", "acetaminofen", "panadol", "efferalgan", "perfalgan"],
+      "classes": ["analgezic", "antipiretic"],
+      "sections": {
+        "ce_este": "Paracetamolul este un medicament pentru durere ușoară sau moderată și pentru scăderea febrei.",
+        "administrare": "Se respectă doza și intervalul minim dintre prize indicate de medic sau în prospect. Poate fi luat cu sau fără mâncare.",
+        "atentionari": "Depășirea dozei maxime zilnice poate afecta grav ficatul, chiar dacă la început nu apar simptome. În caz de supradozare, mergi imediat la urgențe. Atenție la boli de ficat și la consumul de alcool.",
+        "interactiuni": "Multe medicamente pentru răceală și gripă conțin deja paracetamol; verifică eticheta ca să nu iei dublu. Spune medicului dacă iei anticoagulante (warfarină) regulat."
+      }
+    },
+    {
+      "key": "enalapril",
+      "name": "Enalapril",
+      "aliases": ["enalapril", "enap", "renitec", "ednyt"],
+      "classes": ["ieca", "antihipertensiv", "inhibitor al enzimei de conversie"],
+      "sections": {
+        "ce_este": "Enalaprilul este un inhibitor al enzimei de conversie (IECA). Se folosește pentru tensiune arterială mare și în insuficiența cardiacă.",
+        "administrare": "Se ia de obicei la aceeași oră în fiecare zi, cu sau fără mâncare. Este un tratament de durată: nu îl opri singur, chiar dacă valorile tensiunii sunt bune. Măsoară-ți tensiunea regulat și notează valorile pentru medic.",
+        "atentionari": "La început poate da amețeli, mai ales la ridicarea bruscă în picioare. Poate apărea o tuse seacă persistentă; anunță medicul. Umflarea feței, buzelor sau limbii este o urgență (112). Nu se folosește în sarcină.",
+        "interactiuni": "Spune medicului dacă iei suplimente de potasiu, înlocuitori de sare cu potasiu, diuretice sau antiinflamatoare (ibuprofen, diclofenac)."
+      }
+    },
+    {
+      "key": "amlodipina",
+      "name": "Amlodipină",
+      "aliases": ["amlodipina", "amlodipine", "norvasc", "tenox"],
+      "classes": ["blocant al canalelor de calciu", "antihipertensiv"],
+      "sections": {
+        "ce_este": "Amlodipina este un blocant al canalelor de calciu, folosit pentru tensiune arterială mare și pentru unele tipuri de angină pectorală.",
+        "administrare": "Se ia o dată pe zi, la aceeași oră, cu sau fără mâncare. Este un tratament de durată; nu îl întrerupe fără acordul medicului.",
+        "atentionari": "Efecte frecvente: umflarea gleznelor, înroșirea feței, durere de cap, amețeli. Anunță medicul dacă umflăturile sunt mari sau apar palpitații.",
+        "interactiuni": "Cantități mari de suc de grepfrut pot crește concentrația medicamentului. Spune medicului ce alte medicamente pentru inimă sau tensiune iei."
+      }
+    },
+    {
+      "key": "metformin",
+      "name": "Metformin",
+      "aliases": ["metformin", "metformina", "siofor", "glucophage", "meguan"],
+      "classes": ["antidiabetic oral", "biguanida"],
+      "sections": {
+        "ce_este": "Metforminul este un medicament pentru diabetul zaharat de tip 2. Ajută la scăderea glicemiei, împreună cu dieta și mișcarea.",
+        "administrare": "Se ia în timpul mesei sau imediat după, pentru a reduce greața și disconfortul digestiv. Dozele se respectă exact cum a indicat medicul.",
+        "atentionari": "La început pot apărea greață, balonare sau diaree, care de obicei se ameliorează. Anunță medicul înainte de investigații cu substanță de contrast sau de intervenții chirurgicale. Vărsăturile repetate, durerile musculare neobișnuite și respirația accelerată cu stare de rău necesită consult urgent.",
+        "interactiuni": "Evită consumul excesiv de alcool. Spune medicului despre alte medicamente pentru diabet, diuretice sau corticosteroizi."
+      }
+    },
+    {
+      "key": "omeprazol",
+      "name": "Omeprazol",
+      "aliases": ["omeprazol", "omeprazole", "omez", "ultop", "losec"],
+      "classes": ["inhibitor de pompa de protoni", "ipp"],
+      "sections": {
+        "ce_este": "Omeprazolul reduce cantitatea de acid din stomac. Se folosește pentru reflux gastro-esofagian, ulcer și pentru protecția stomacului în timpul unor tratamente.",
+        "administrare": "Se ia de obicei dimineața, înainte de micul dejun, cu un pahar de apă. Capsula se înghite întreagă.",
+        "atentionari": "Folosirea pe termen lung se discută periodic cu medicul. Anunță medicul dacă ai dificultăți la înghițire, scădere în greutate inexplicabilă, vărsături cu sânge sau scaun negru.",
+        "interactiuni": "Poate interacționa cu clopidogrel, unele anticoagulante și unele medicamente antifungice sau HIV. Spune medicului toate medicamentele pe care le iei."
+      }
+    },
+    {
+      "key": "atorvastatina",
+      "name": "Atorvastatină",
+      "aliases": ["atorvastatina", "atorvastatin", "sortis", "atoris", "lipitor"],
+      "classes": ["statina", "hipolipemiant"],
+      "sections": {
+        "ce_este": "Atorvastatina este o statină. Scade colesterolul „rău” (LDL) și reduce riscul de infarct și accident vascular cerebral.",
+        "administrare": "Se ia o dată pe zi, la aceeași oră, cu sau fără mâncare. Efectul se menține doar cât timp se ia regulat; analizele de sânge se repetă periodic.",
+        "atentionari": "Anunță medicul dacă apar dureri, slăbiciune sau crampe musculare inexplicabile, mai ales însoțite de febră sau urină închisă la culoare. Nu se folosește în sarcină sau alăptare.",
+        "interactiuni": "Evită cantități mari de suc de grepfrut. Spune medicului dacă iei antibiotice macrolide (claritromicină), antifungice sau alte medicamente pentru colesterol."
+      }
+    },
+    {
+      "key": "levotiroxina",
+      "name": "Levotiroxină",
+      "aliases": ["levotiroxina", "levothyroxine", "euthyrox", "letrox", "eutirox"],
+      "classes": ["hormon tiroidian"],
+      "sections": {
+        "ce_este": "Levotiroxina înlocuiește hormonul produs de glanda tiroidă. Se folosește în hipotiroidism și după unele intervenții la tiroidă.",
+        "administrare": "Se ia dimineața, pe stomacul gol, cu apă, cu aproximativ 30-60 de minute înainte de micul dejun. Contează să fie luată în fiecare zi la fel. Doza se ajustează de medic în funcție de analize (TSH).",
+        "atentionari": "Palpitațiile, tremurăturile, insomnia sau transpirațiile pot însemna o doză prea mare; anunță medicul. Nu schimba singur doza.",
+        "interactiuni": "Suplimentele de calciu, fier, magneziu și antiacidele se iau la distanță de câteva ore. Cafeaua și laptele imediat după administrare pot scădea absorbția."
+      }
+    },
+    {
+      "key": "desloratadina",
+      "name": "Desloratadină",
+      "aliases": ["desloratadina", "desloratadine", "aerius", "deslor"],
+      "classes": ["antihistaminic"],
+      "sections": {
+        "ce_este": "Desloratadina este un antihistaminic folosit pentru simptomele alergiilor: strănut, nas care curge, mâncărimi ale ochilor sau urticarie.",
+        "administrare": "Se ia de obicei o dată pe zi, cu sau fără mâncare.",
+        "atentionari": "Produce rar somnolență, dar fii atent la condus până știi cum reacționezi. O reacție alergică cu umflarea feței sau greutate în respirație este o urgență (112).",
+        "interactiuni": "Interacțiunile sunt rare; spune totuși medicului sau farmacistului ce alte medicamente iei."
+      }
+    }
+  ]
+}

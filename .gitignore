@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Secrete
+.env
+
+# Rezultatele brute ale evaluării (păstrează doar ce alegi să publici)
+api/eval/results/*.json
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Vechiul prototip Node (dacă îl păstrezi local)
+node_modules/
+legacy_node/

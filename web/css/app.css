@@ -1,0 +1,63 @@
+/* Componente comune adăugate peste stilurile originale ale proiectului */
+:root { --accent: #357df0; --accent-dark: #1d4ed8; --muted: #64748b; --ok: #16a34a; --warn: #b45309; --danger: #dc2626; }
+
+.muted { color: var(--muted); font-size: 13px; }
+.hidden { display: none !important; }
+.error-box { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; padding: 10px 12px; border-radius: 10px; font-size: 14px; margin-top: 12px; }
+.ok-box { background: #f0fdf4; color: var(--ok); border: 1px solid #bbf7d0; padding: 10px 12px; border-radius: 10px; font-size: 14px; margin-top: 12px; }
+
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0; background: #0f172a; color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 14px; transition: all .25s; z-index: 1000; pointer-events: none; max-width: calc(100% - 32px); }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.err { background: var(--danger); }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--accent); color: #fff; padding: 12px 20px; border-radius: 10px; margin-bottom: 18px; }
+.topbar .brand { font-weight: 700; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+.topbar .brand img { width: 34px; height: 34px; border-radius: 8px; background: #fff; }
+.topbar .user { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.topbar a, .topbar button.link { color: #fff; background: rgba(255,255,255,.16); border: 0; padding: 7px 12px; border-radius: 8px; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; margin: 0; }
+.topbar a:hover, .topbar button.link:hover { background: rgba(255,255,255,.28); }
+
+.panel { background: #fff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,.05); padding: 22px 24px; max-width: 980px; margin: 0 auto 18px; }
+.panel h2 { text-align: left; margin-bottom: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+
+.list-item { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: background .15s, border-color .15s; }
+.list-item:hover { background: #f8fafc; border-color: #bfdbfe; }
+.list-item .title { font-weight: 700; }
+.pill { display: inline-block; font-size: 12px; background: #eff6ff; color: var(--accent-dark); padding: 3px 9px; border-radius: 999px; margin: 2px 4px 2px 0; }
+.pill.warn { background: #fffbeb; color: var(--warn); }
+
+.btn-sm { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; font-size: 14px; }
+.btn-sm:hover { background: var(--accent-dark); }
+.btn-sm.ghost { background: #fff; color: var(--accent); border: 1px solid #bfdbfe; }
+.btn-sm.danger { background: #fff; color: var(--danger); border: 1px solid #fecaca; }
+.btn-sm:disabled { opacity: .6; cursor: wait; }
+
+/* Rețetă: rânduri de medicamente */
+.item-row { border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #fafcff; }
+.item-row .grid2 .field { margin-bottom: 10px; }
+.ai-preview { font-size: 13px; color: var(--muted); margin-top: 4px; min-height: 18px; }
+
+/* Interpretarea AI */
+.ai-box { border: 1px solid #c7d2fe; background: linear-gradient(180deg, #f5f8ff, #fff); border-radius: 12px; padding: 16px 18px; margin-top: 16px; }
+.ai-box h3 { margin: 0 0 8px; font-size: 17px; }
+.med-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+.med-card h4 { margin: 0 0 6px; font-size: 16px; }
+.schedule { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.schedule span { background: var(--accent); color: #fff; border-radius: 8px; padding: 3px 9px; font-size: 13px; font-weight: 600; }
+.alert { background: #fef2f2; border-left: 4px solid var(--danger); color: #991b1b; padding: 8px 10px; border-radius: 6px; font-size: 14px; margin: 8px 0; }
+.original { font-size: 13px; color: #334155; background: #f1f5f9; border-radius: 6px; padding: 6px 8px; margin-top: 6px; }
+.sources { font-size: 12px; color: var(--muted); margin-top: 10px; }
+.disclaimer { font-size: 12px; color: var(--muted); border-top: 1px solid #e2e8f0; margin-top: 12px; padding-top: 8px; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #c7d2fe; border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -3px; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.doctor-list { display: grid; gap: 8px; margin-top: 8px; }
+.doctor-card { background: #fff; border: 1px solid #dbeafe; border-radius: 8px; padding: 8px 10px; }
+.doctor-name { font-weight: 700; color: #0f172a; }
+
+input[type=email], input[type=number] { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid #d1d5db; background: #fff; margin-bottom: 14px; font-size: 15px; }
+.panel input[type=email], .panel select { padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 15px; width: 100%; }
+
+.panel *, .panel *::before, .panel *::after { box-sizing: border-box; }

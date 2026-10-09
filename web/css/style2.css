@@ -1,0 +1,223 @@
+ body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f6f6;
+        }
+
+        header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            background-color: #357df0;
+            color: white;
+            padding: 10px 20px;
+        }
+
+        button {
+            background-color: #fff;
+            color: #357df0;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 16px;
+            margin-left: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #e3f2fd;
+        }
+
+        #content {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        #lista-retete {
+            flex: 1;
+            background: white;
+            margin: 20px;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            display: none; /* ascuns inițial */
+        }
+
+        #reteta-detalii {
+            flex: 2;
+            background: white;
+            margin: 20px;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: none; /* ascuns inițial */
+        }
+
+        .reteta-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .reteta-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* CHAT */
+
+        #ai-chat {
+    display: flex;
+    margin: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    overflow: hidden; 
+    width:100%; 
+}
+
+
+   #chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border-bottom: 1px solid #ccc;
+}
+
+    #chat-box {
+      display: flex;
+flex-direction:column;
+  flex: 1;
+    }
+
+    #messages {
+  flex: auto;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #fff;
+}
+
+
+    .message {
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 90%;
+    }
+
+    .user {
+      background-color: #1976d2;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .ai {
+      background-color: #e0e0e0;
+      color: #000;
+      align-self: flex-start;
+    }
+
+ #input-area {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 5px;
+}
+
+#input-area input {
+  flex: 1;
+  padding: 14px 16px;
+  border-radius: 10px 0 0 10px;
+  border: 1px solid #ccc;
+  border-right: none;
+  outline: none;
+  font-size: 1rem;
+ 
+}
+
+
+#input-area button {
+  flex: 0 0 auto;
+  padding: 0 24px;
+  border: 1px solid #1976d2;
+  border-radius: 0 10px 10px 0;
+  background-color: #1976d2;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+
+#input-area button:hover {
+  background-color: #1259a7;
+}
+   #history {
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 10px;
+  background-color: #fafafa;
+  border-top: 1px solid #ccc;
+
+}
+    .conversation-item {
+      background-color: #f1f1f1;
+      border-radius: 5px;
+      padding: 5px;
+      margin: 5px 0;
+      cursor: pointer;
+      
+    }
+
+    .conversation-item:hover {
+      background-color: #e0e0e0;
+    }
+
+    #recordBtn {
+  flex: 0 0 auto;
+  padding: 0 16px;
+  border: 1px solid #1976d2;
+  border-radius: 10px;
+  background-color: #2196f3;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 5px;
+  transition: 0.3s;
+}
+
+#recordBtn:hover {
+  background-color: #1259a7;
+}
+
+.audio-msg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.play-audio {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.play-audio:hover {
+  background-color: #1259a7;
+}
+
+.hidden-audio {
+  display: none;
+}

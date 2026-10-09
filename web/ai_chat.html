@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4Health - Iris, asistentul AI</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    body { font-family: Arial, sans-serif; background: #f6f8fb; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+    .topbar { border-radius: 0; margin: 0; }
+    #wrap { flex: 1; display: flex; gap: 12px; padding: 12px; min-height: 0; max-width: 1100px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+    #history { width: 240px; background: #fff; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.06); padding: 12px; overflow-y: auto; }
+    #history h3 { font-size: 14px; margin: 0 0 8px; }
+    .conversation-item { background: #f1f3f7; padding: 7px 10px; border-radius: 6px; margin: 4px 0; cursor: pointer; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conversation-item:hover, .conversation-item.active { background: #dbeafe; }
+    #chat-box { flex: 1; background: #fff; display: flex; flex-direction: column; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.08); overflow: hidden; min-width: 0; }
+    #chat-header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; gap: 8px; }
+    #chat-header h2 { margin: 0; font-size: 17px; }
+    #status { font-size: 12px; }
+    #messages { flex: 1; padding: 14px; overflow-y: auto; background: #f9fbff; display: flex; flex-direction: column; }
+    .message { padding: 10px 12px; border-radius: 12px; margin: 6px 0; max-width: 82%; word-wrap: break-word; line-height: 1.45; white-space: pre-wrap; }
+    .message.user { background: #357df0; color: #fff; align-self: flex-end; }
+    .message.ai { background: #fff; border: 1px solid #e2e8f0; align-self: flex-start; }
+    .message.urgent { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-weight: 600; }
+    .message .meta { white-space: normal; font-size: 12px; color: #64748b; margin-top: 8px; }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .suggestions button { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+    #input-area { display: flex; gap: 6px; padding: 10px; border-top: 1px solid #e2e8f0; }
+    #input-area input { flex: 1; padding: 11px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; min-width: 0; }
+    #input-area button { padding: 0 16px; border: none; border-radius: 8px; background: #357df0; color: #fff; cursor: pointer; font-weight: 600; }
+    #input-area button:disabled { opacity: .6; }
+    #recordBtn.rec { background: #dc2626; }
+    @media (max-width: 760px) { #history { display: none; } .message { max-width: 92%; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="img/logo.png" alt="">Iris · asistentul tău</div>
+    <div class="user"><span id="userName"></span><a id="backLink" href="pagina_princ.html">Înapoi</a></div>
+  </div>
+
+  <div id="wrap">
+    <aside id="history">
+      <h3>Conversații</h3>
+      <div id="convList"><p class="muted">Autentifică-te ca să îți salvezi conversațiile.</p></div>
+    </aside>
+
+    <div id="chat-box">
+      <div id="chat-header">
+        <h2>Asistent AI</h2>
+        <span id="status" class="muted"></span>
+        <button id="newChatBtn" class="btn-sm ghost">+ Conversație nouă</button>
+      </div>
+      <div id="messages"></div>
+      <div id="input-area">
+        <input type="text" id="userInput" placeholder="Scrie o întrebare..." autocomplete="off" />
+        <button id="recordBtn" title="Dictează (Chrome/Edge)">🎤</button>
+        <button id="sendBtn">Trimite</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const messages = $("messages");
+    let sessionId = null;
+    let visitorHistory = [];   // pentru vizitatori, istoricul stă doar în pagină
+    const loggedIn = !!Auth.token;
+
+    if (loggedIn) { $("userName").textContent = Auth.name; $("backLink").href = Auth.homeFor(Auth.role); }
+
+    const SUGGESTIONS = Auth.role === "patient"
+      ? ["Explică-mi pe scurt ce medicamente iau acum", "Am uitat o doză, ce fac?", "Mă doare stomacul după masă, la ce medic să merg?"]
+      : Auth.role === "doctor"
+      ? ["Interacțiuni importante ale enalaprilului", "Ce atenționări are metforminul?"]
+      : ["Cum iau corect un antibiotic?", "Am palpitații des, la ce medic să merg?", "Cum îmi pot scădea tensiunea?"];
+
+    function welcome() {
+      messages.innerHTML = "";
+      addMessage("Bună! Sunt Iris, asistentul AI 4Health. Te pot ajuta cu informații despre rețete și medicamente, sfaturi generale și cu alegerea medicului potrivit. Nu pun diagnostice - pentru urgențe sună la 112.", "ai");
+      const s = document.createElement("div");
+      s.className = "suggestions";
+      s.innerHTML = SUGGESTIONS.map(q => `<button>${esc(q)}</button>`).join("");
+      s.querySelectorAll("button").forEach(b => b.onclick = () => { $("userInput").value = b.textContent; send(); });
+      messages.appendChild(s);
+    }
+
+    function addMessage(text, who, extra = {}) {
+      const m = document.createElement("div");
+      m.className = "message " + who + (extra.urgent ? " urgent" : "");
+      m.textContent = text;
+      if (extra.html) { const meta = document.createElement("div"); meta.className = "meta"; meta.innerHTML = extra.html; m.appendChild(meta); }
+      messages.appendChild(m);
+      messages.scrollTop = messages.scrollHeight;
+      return m;
+    }
+
+    function metaHtml(r) {
+      let h = "";
+      if (r.specialty) h += `<div><strong>Specializare sugerată:</strong> ${esc(r.specialty.label)}</div>`;
+      if (r.doctors && r.doctors.length) h += doctorCards(r.doctors);
+      if (r.sources && r.sources.length) h += `<div style="margin-top:6px">Surse: ${[...new Set(r.sources.map(s => s.title))].slice(0, 4).map(esc).join(" · ")}</div>`;
+      return h;
+    }
+
+    async function send() {
+      const text = $("userInput").value.trim();
+      if (!text) return;
+      $("userInput").value = "";
+      document.querySelector(".suggestions")?.remove();
+      addMessage(text, "user");
+      const pending = addMessage("", "ai");
+      pending.innerHTML = `<span class="spinner"></span>Iris se gândește...`;
+      $("sendBtn").disabled = true;
+      try {
+        const r = await api("/api/ai/chat", { method: "POST", body: { message: text, session_id: sessionId, history: loggedIn ? null : visitorHistory } });
+        pending.remove();
+        addMessage(r.reply, "ai", { urgent: r.urgent, html: metaHtml(r) });
+        if (loggedIn) { if (!sessionId) { sessionId = r.session_id; loadSessions(); } }
+        else visitorHistory.push({ role: "user", content: text }, { role: "assistant", content: r.reply });
+      } catch (e) {
+        pending.remove();
+        addMessage("⚠️ " + e.message, "ai", { urgent: true });
+      } finally { $("sendBtn").disabled = false; $("userInput").focus(); }
+    }
+
+    async function loadSessions() {
+      if (!loggedIn) return;
+      const list = await api("/api/ai/chat/sessions");
+      $("convList").innerHTML = list.length ? list.map(s => `<div class="conversation-item ${s.id === sessionId ? "active" : ""}" data-id="${s.id}" title="${esc(s.title)}">${esc(s.title)}</div>`).join("")
+        : `<p class="muted">Nicio conversație încă.</p>`;
+      $("convList").querySelectorAll("[data-id]").forEach(el => el.onclick = () => openSession(Number(el.dataset.id)));
+    }
+
+    async function openSession(id) {
+      const s = await api("/api/ai/chat/sessions/" + id);
+      sessionId = id;
+      messages.innerHTML = "";
+      s.messages.forEach(m => addMessage(m.content, m.role === "user" ? "user" : "ai", { urgent: m.meta && m.meta.urgent }));
+      loadSessions();
+    }
+
+    $("sendBtn").onclick = send;
+    $("userInput").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+    $("newChatBtn").onclick = () => { sessionId = null; visitorHistory = []; welcome(); loadSessions(); };
+
+    // 🎤 Dictare vocală cu Web Speech API (transcriere în browser, în română)
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) $("recordBtn").classList.add("hidden");
+    else {
+      const rec = new SR();
+      rec.lang = "ro-RO";
+      rec.interimResults = true;
+      let on = false;
+      rec.onresult = (e) => { $("userInput").value = [...e.results].map(r => r[0].transcript).join(""); };
+      rec.onend = () => { on = false; $("recordBtn").classList.remove("rec"); };
+      $("recordBtn").onclick = () => { if (on) rec.stop(); else { on = true; $("recordBtn").classList.add("rec"); rec.start(); } };
+    }
+
+    // Starea modelului local
+    api("/api/ai/health", { auth: false }).then(h => {
+      $("status").textContent = h.ollama === "ok" ? (h.llm_ready ? `● ${h.llm_model}` : `⚠ lipsește modelul ${h.llm_model}`) : "⚠ Ollama oprit";
+      $("status").style.color = h.ollama === "ok" && h.llm_ready ? "#16a34a" : "#b45309";
+    }).catch(() => {});
+
+    welcome();
+    loadSessions().catch(() => {});
+  </script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>4Health - Autentificare</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>Autentificare</h1>
+    <p class="lead">Contul tău de pacient sau de medic</p>
+
+    <form id="loginForm" autocomplete="on" novalidate>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" placeholder="ion.popescu@4health.ro" required />
+
+      <label for="parola">Parolă</label>
+      <input id="parola" name="parola" type="password" placeholder="••••••••" required minlength="6" />
+
+      <div class="row">
+        <button type="submit" id="btnLogin" class="btn btn-primary">Intră în cont</button>
+      </div>
+
+      <p class="note">Nu ai cont? <a href="creare_cont.html">Creează un cont</a><br>
+        <a href="pagina_princ.html">Continuă ca vizitator</a></p>
+    </form>
+
+    <div id="result" class="hidden" aria-live="polite"></div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    const form = document.getElementById("loginForm");
+    const result = document.getElementById("result");
+    const next = new URLSearchParams(location.search).get("next");
+
+    if (Auth.token && !next) location.href = Auth.homeFor(Auth.role);
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!form.checkValidity()) return form.reportValidity();
+      const btn = document.getElementById("btnLogin");
+      btn.disabled = true;
+      try {
+        const data = await api("/api/auth/login", {
+          method: "POST", auth: false,
+          body: { email: form.email.value.trim(), password: form.parola.value },
+        });
+        Auth.save(data);
+        const allowed = next && !next.includes("/") ? next : null;
+        location.href = allowed && (allowed !== "interfata_medic.html" || data.role === "doctor") ? allowed : Auth.homeFor(data.role);
+      } catch (err) {
+        result.className = "error-box";
+        result.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

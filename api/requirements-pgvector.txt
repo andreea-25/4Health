@@ -1,0 +1,3 @@
+# Doar pentru VECTOR_BACKEND=pgvector (ex. cu docker compose)
+-r requirements.txt
+pgvector>=0.3.6

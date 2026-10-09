@@ -1,0 +1,41 @@
+# Pornește doar baza de date:      docker compose up -d db
+# Pornește totul (DB + API):       docker compose --profile full up -d --build
+# Ollama rulează direct pe Windows (are acces la GPU), nu în Docker.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: health4-db
+    environment:
+      POSTGRES_USER: health4
+      POSTGRES_PASSWORD: health4
+      POSTGRES_DB: health4
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U health4"]
+      interval: 5s
+      retries: 10
+
+  api:
+    profiles: ["full"]
+    build: ./api
+    container_name: health4-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://health4:health4@db:5432/health4
+      VECTOR_BACKEND: pgvector
+      OLLAMA_URL: http://host.docker.internal:11434
+      WEB_DIR: /web
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./web:/web:ro
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>4Health - Panou medic</title>
+  <link rel="stylesheet" href="css/css_interfata_medic.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="img/logo.png" alt="">Panou medic</div>
+    <div class="user"><span id="userName"></span><a href="ai_chat.html">Asistent AI</a><button class="link" onclick="Auth.logout()">Ieșire</button></div>
+  </div>
+
+  <nav>
+    <button data-tab="sectPacienti" class="active">Pacienții mei</button>
+    <button data-tab="sectReteta">Rețetă nouă</button>
+    <button data-tab="sectEmise">Rețete emise</button>
+  </nav>
+
+  <!-- ===================== PACIENȚI ===================== -->
+  <section id="sectPacienti" class="panel">
+    <h2>Pacienții mei</h2>
+    <form id="cautaForm" class="row" style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px">
+      <div class="field" style="flex:1;margin:0"><label>Caută pacient după CNP</label><input type="text" id="cautaCnp" maxlength="13" placeholder="13 cifre"></div>
+      <button class="btn-sm" type="submit">Caută</button>
+    </form>
+    <div id="cautaRezultat"></div>
+    <div id="listaPacienti"><span class="spinner"></span></div>
+  </section>
+
+  <!-- ===================== REȚETĂ NOUĂ ===================== -->
+  <section id="sectReteta" class="panel hidden">
+    <h2>Rețetă medicală</h2>
+    <form id="retetaForm">
+      <div class="field"><label>Pacient</label><select name="patient_id" id="selPacient" required></select></div>
+      <div class="grid2">
+        <div class="field"><label>Seria</label><input type="text" name="series" required></div>
+        <div class="field"><label>Număr</label><input type="text" name="number" required></div>
+        <div class="field"><label>Unitate sanitară</label><input type="text" name="clinic_unit" id="unitate" required></div>
+        <div class="field"><label>Data eliberării</label><input type="date" name="issued_at" id="dataEliberare" required></div>
+      </div>
+      <div class="field"><label>Diagnostic</label><textarea name="diagnosis" style="min-height:50px"></textarea></div>
+
+      <h3 style="margin:18px 0 10px">Medicamente (Rp/)</h3>
+      <div id="items"></div>
+      <button type="button" class="btn-sm ghost" id="addItem">+ Adaugă medicament</button>
+
+      <div class="field" style="margin-top:16px"><label>Observații</label><textarea name="notes" style="min-height:50px"></textarea></div>
+      <button type="submit" class="submit-btn" id="btnSave">Salvează rețeta</button>
+    </form>
+  </section>
+
+  <!-- ===================== REȚETE EMISE ===================== -->
+  <section id="sectEmise" class="panel hidden">
+    <h2>Rețete emise</h2>
+    <div id="listaEmise"></div>
+    <div id="detaliiEmisa"></div>
+  </section>
+
+  <template id="itemTpl">
+    <div class="item-row">
+      <div class="grid2">
+        <div class="field"><label>DC / DCI</label><input type="text" data-k="drug_name" placeholder="ex. Amoxicilină" required></div>
+        <div class="field"><label>Concentrație / formă</label><input type="text" data-k="concentration_form" placeholder="500 mg capsule"></div>
+      </div>
+      <div class="field"><label>Mod de administrare</label>
+        <input type="text" data-k="administration" placeholder="ex. 1 cp de 3 ori pe zi, după masă">
+        <div class="ai-preview"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Cantitate</label><input type="text" data-k="quantity" placeholder="21 capsule"></div>
+        <div class="field"><label>Durata tratamentului</label><input type="text" data-k="duration" placeholder="7 zile"></div>
+      </div>
+      <button type="button" class="btn-sm danger remove">Șterge</button>
+    </div>
+  </template>
+
+  <script src="js/api.js"></script>
+  <script src="js/interpretation.js"></script>
+  <script>
+    Auth.require("doctor");
+    document.getElementById("userName").textContent = "Dr. " + Auth.name;
+    const $ = (id) => document.getElementById(id);
+    let patients = [];
+
+    // ---------- Tab-uri ----------
+    document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b === btn));
+      document.querySelectorAll("section.panel").forEach(s => s.classList.toggle("hidden", s.id !== btn.dataset.tab));
+      if (btn.dataset.tab === "sectEmise") loadIssued();
+    }));
+
+    function showTab(id) { document.querySelector(`nav button[data-tab="${id}"]`).click(); }
+
+    // ---------- Pacienți ----------
+    function patientRow(p) {
+      return `<div class="list-item" data-pid="${p.id}">
+        <div class="title">${esc(p.name)}</div>
+        <div class="muted">${p.cnp ? "CNP " + esc(p.cnp) + " · " : ""}${esc(p.email)}</div>
+        ${p.allergies ? `<span class="pill warn">Alergii: ${esc(p.allergies)}</span>` : ""}
+        ${p.chronic_conditions ? `<span class="pill">${esc(p.chronic_conditions)}</span>` : ""}
+        <div style="margin-top:8px"><button class="btn-sm" data-new="${p.id}">Rețetă nouă</button></div>
+      </div>`;
+    }
+
+    async function loadPatients() {
+      patients = await api("/api/doctor/patients");
+      $("listaPacienti").innerHTML = patients.length ? patients.map(patientRow).join("")
+        : `<p class="muted">Nu ai încă pacienți. Pacienții te pot alege ca medic de familie sau îi poți căuta după CNP.</p>`;
+      fillPatientSelect();
+    }
+
+    function fillPatientSelect(selected) {
+      $("selPacient").innerHTML = `<option value="">-- alege pacientul --</option>` +
+        patients.map(p => `<option value="${p.id}" ${p.id == selected ? "selected" : ""}>${esc(p.name)}${p.cnp ? " (" + p.cnp + ")" : ""}</option>`).join("");
+    }
+
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-new]");
+      if (!b) return;
+      fillPatientSelect(b.dataset.new);
+      showTab("sectReteta");
+    });
+
+    $("cautaForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const cnp = $("cautaCnp").value.trim();
+      try {
+        const p = await api("/api/doctor/patients/search?cnp=" + encodeURIComponent(cnp));
+        if (!patients.find(x => x.id === p.id)) { patients.push(p); fillPatientSelect(); }
+        $("cautaRezultat").innerHTML = patientRow(p);
+      } catch (err) { $("cautaRezultat").innerHTML = `<div class="error-box">${esc(err.message)}</div>`; }
+    });
+
+    // ---------- Formular rețetă ----------
+    function addItem() {
+      const node = $("itemTpl").content.firstElementChild.cloneNode(true);
+      node.querySelector(".remove").onclick = () => { if ($("items").children.length > 1) node.remove(); };
+      const adm = node.querySelector('[data-k="administration"]');
+      const dur = node.querySelector('[data-k="duration"]');
+      const preview = node.querySelector(".ai-preview");
+      let t;
+      const update = () => {
+        clearTimeout(t);
+        const text = [adm.value, dur.value].filter(Boolean).join(", ");
+        if (text.length < 3) { preview.textContent = ""; return; }
+        t = setTimeout(async () => {
+          preview.innerHTML = `<span class="spinner"></span>se analizează...`;
+          try {
+            const r = await api("/api/ai/dosage", { method: "POST", body: { text } });
+            const s = dosageSummary(r.dosage);
+            preview.innerHTML = s ? `Pacientul va vedea: <strong>${esc(s)}</strong>${r.schedule.length ? " · orar " + r.schedule.join(", ") : ""} <span class="pill">${r.method === "llm" ? "AI" : "reguli"}</span>`
+              : "⚠️ Indicația nu a putut fi interpretată - scrie doza și frecvența explicit.";
+          } catch { preview.textContent = ""; }
+        }, 900);
+      };
+      adm.addEventListener("input", update);
+      dur.addEventListener("input", update);
+      $("items").appendChild(node);
+    }
+    $("addItem").onclick = addItem;
+    addItem();
+    $("dataEliberare").valueAsDate = new Date();
+
+    $("retetaForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      if (!f.checkValidity()) return f.reportValidity();
+      const body = Object.fromEntries(new FormData(f).entries());
+      body.patient_id = Number(body.patient_id);
+      body.items = [...$("items").children].map(row =>
+        Object.fromEntries([...row.querySelectorAll("[data-k]")].map(i => [i.dataset.k, i.value.trim()])));
+      $("btnSave").disabled = true;
+      try {
+        await api("/api/doctor/prescriptions", { method: "POST", body });
+        toast("Rețeta a fost salvată. Pacientul o vede imediat în contul lui.");
+        f.reset();
+        $("items").innerHTML = "";
+        addItem();
+        $("dataEliberare").valueAsDate = new Date();
+        loadPatients();
+        showTab("sectEmise");
+      } catch (err) { toast(err.message, "err"); }
+      finally { $("btnSave").disabled = false; }
+    });
+
+    // ---------- Rețete emise ----------
+    async function loadIssued() {
+      const list = await api("/api/doctor/prescriptions");
+      $("detaliiEmisa").innerHTML = "";
+      $("listaEmise").innerHTML = list.length ? list.map(r => `
+        <div class="list-item" data-rx='${r.id}'>
+          <div class="title">${esc(r.patient_name)} · ${esc(r.series)} ${esc(r.number)}</div>
+          <div class="muted">${fmtDate(r.issued_at)} · ${esc(r.diagnosis || "fără diagnostic")}</div>
+          ${r.items.map(i => `<span class="pill">${esc(i.drug_name)}</span>`).join("")}
+        </div>`).join("") : `<p class="muted">Nu ai emis încă nicio rețetă.</p>`;
+      $("listaEmise").querySelectorAll("[data-rx]").forEach(el => el.onclick = () => {
+        const r = list.find(x => x.id == el.dataset.rx);
+        $("detaliiEmisa").innerHTML = `
+          <div class="panel" style="padding:16px;box-shadow:none;border:1px solid #e2e8f0">
+            <h3>${esc(r.patient_name)} - rețeta ${esc(r.series)} ${esc(r.number)}</h3>
+            <p class="muted">${esc(r.clinic_unit)} · ${fmtDate(r.issued_at)}</p>
+            <ul>${r.items.map(i => `<li><strong>${esc(i.drug_name)}</strong> ${esc(i.concentration_form)} - ${esc(i.administration)} ${i.duration ? "· " + esc(i.duration) : ""}</li>`).join("")}</ul>
+            <button class="btn-sm ghost" id="btnPreviewAI">Vezi cum îi explică AI-ul pacientului</button>
+            <div id="aiOut"></div>
+          </div>`;
+        $("btnPreviewAI").onclick = () => loadInterpretation(r.id, $("aiOut"));
+        $("detaliiEmisa").scrollIntoView({ behavior: "smooth" });
+      });
+    }
+
+    // Unitatea sanitară precompletată din profilul medicului
+    api("/api/doctor/me").then(me => { $("unitate").value = me.clinic; });
+    loadPatients().catch(e => toast(e.message, "err"));
+  </script>
+</body>
+</html>

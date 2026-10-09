@@ -1,0 +1,35 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        vector_backend: [python, pgvector]
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: health4
+          POSTGRES_PASSWORD: health4
+          POSTGRES_DB: health4_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U health4" --health-interval 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r ${{ matrix.vector_backend == 'pgvector' && 'requirements-pgvector.txt' || 'requirements.txt' }}
+      - run: pytest -q
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://health4:health4@localhost:5432/health4_test
+          VECTOR_BACKEND: ${{ matrix.vector_backend }}
+      - name: Evaluare baseline (fără LLM)
+        run: python -m eval.run_eval --task dosage --methods rules && python -m eval.run_eval --task triage --methods rules
+        env:
+          DATABASE_URL: postgresql+psycopg://health4:health4@localhost:5432/health4_test

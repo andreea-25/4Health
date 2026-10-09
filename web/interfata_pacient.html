@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4Health - Contul meu</title>
+  <link rel="stylesheet" href="css/css_interfata_medic.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="img/logo.png" alt="">4Health</div>
+    <div class="user"><span id="userName"></span><a href="pagina_princ.html">Acasă</a><a href="ai_chat.html">Întreabă-l pe Iris</a><button class="link" onclick="Auth.logout()">Ieșire</button></div>
+  </div>
+
+  <nav>
+    <button data-tab="sectRetete" class="active">Rețetele mele</button>
+    <button data-tab="sectProfil">Profil medical</button>
+    <button data-tab="sectMedic">Găsește un medic</button>
+  </nav>
+
+  <section id="sectRetete" class="panel">
+    <h2>Rețetele mele</h2>
+    <div id="listaRetete"><span class="spinner"></span></div>
+    <div id="retetaDetalii" class="hidden"></div>
+  </section>
+
+  <section id="sectProfil" class="panel hidden">
+    <h2>Profil medical</h2>
+    <p class="muted">Aceste informații îl ajută pe asistentul AI să te avertizeze (de exemplu despre alergii) și pe medic să te trateze corect.</p>
+    <form id="profilForm" style="margin-top:12px">
+      <div class="field"><label>Alergii</label><input type="text" id="alergii" placeholder="ex. penicilină, aspirină"></div>
+      <div class="field"><label>Afecțiuni cronice</label><input type="text" id="cronice" placeholder="ex. hipertensiune, diabet"></div>
+      <div class="field"><label>Medic de familie</label><select id="medicFamilie"></select></div>
+      <button class="btn-sm" type="submit">Salvează</button>
+    </form>
+  </section>
+
+  <section id="sectMedic" class="panel hidden">
+    <h2>La ce medic să merg?</h2>
+    <p class="muted">Descrie pe scurt ce simți. Iris îți sugerează specializarea potrivită și medicii disponibili. Pentru urgențe sună la 112.</p>
+    <form id="recForm" style="margin-top:12px">
+      <div class="field"><textarea id="simptome" placeholder="ex. De o săptămână am arsuri în capul pieptului după masă și gust acru în gură." required></textarea></div>
+      <button class="btn-sm" type="submit" id="btnRec">Recomandă-mi un medic</button>
+    </form>
+    <div id="recOut"></div>
+  </section>
+
+  <script src="js/api.js"></script>
+  <script src="js/interpretation.js"></script>
+  <script>
+    Auth.require("patient");
+    const $ = (id) => document.getElementById(id);
+    $("userName").textContent = Auth.name;
+
+    document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b === btn));
+      document.querySelectorAll("section.panel").forEach(s => s.classList.toggle("hidden", s.id !== btn.dataset.tab));
+    }));
+
+    // ---------- Rețete ----------
+    let retete = [];
+    async function loadRetete() {
+      retete = await api("/api/patient/prescriptions");
+      $("listaRetete").innerHTML = retete.length ? retete.map(r => `
+        <div class="list-item" data-id="${r.id}">
+          <div class="title">${esc(r.diagnosis || "Rețetă")} <span class="muted">· ${fmtDate(r.issued_at)}</span></div>
+          <div class="muted">${esc(r.doctor_name)} (${esc(r.doctor_specialty)}) · seria ${esc(r.series)} nr. ${esc(r.number)}</div>
+          ${r.items.map(i => `<span class="pill">${esc(i.drug_name)}</span>`).join("")}
+        </div>`).join("") : `<p class="muted">Nu ai încă rețete. Când medicul îți emite o rețetă, apare aici automat.</p>`;
+      $("listaRetete").querySelectorAll("[data-id]").forEach(el => el.onclick = () => showReteta(Number(el.dataset.id)));
+    }
+
+    function showReteta(id) {
+      const r = retete.find(x => x.id === id);
+      $("listaRetete").classList.add("hidden");
+      const d = $("retetaDetalii");
+      d.classList.remove("hidden");
+      d.innerHTML = `
+        <button class="btn-sm ghost" id="btnInapoi">← Înapoi la listă</button>
+        <h3 style="margin:14px 0 4px">${esc(r.diagnosis || "Rețetă")}</h3>
+        <p class="muted">${esc(r.doctor_name)} · ${esc(r.clinic_unit)} · ${fmtDate(r.issued_at)} · seria ${esc(r.series)} nr. ${esc(r.number)}</p>
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:14px">
+          <tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th>Medicament</th><th>Administrare</th><th>Cantitate</th><th>Durată</th></tr>
+          ${r.items.map(i => `<tr style="border-bottom:1px solid #f1f5f9"><td><strong>${esc(i.drug_name)}</strong><br><span class="muted">${esc(i.concentration_form)}</span></td>
+            <td>${esc(i.administration)}</td><td>${esc(i.quantity)}</td><td>${esc(i.duration)}</td></tr>`).join("")}
+        </table>
+        ${r.notes ? `<p style="margin-top:10px"><strong>Observații:</strong> ${esc(r.notes)}</p>` : ""}
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sm" id="btnExplica">✨ Explică-mi rețeta</button>
+          <button class="btn-sm ghost" id="btnRegen" title="Generează din nou explicația">↻ Regenerează</button>
+        </div>
+        <div id="aiOut"></div>`;
+      $("btnInapoi").onclick = () => { d.classList.add("hidden"); $("listaRetete").classList.remove("hidden"); };
+      $("btnExplica").onclick = () => loadInterpretation(r.id, $("aiOut"));
+      $("btnRegen").onclick = () => loadInterpretation(r.id, $("aiOut"), true);
+    }
+
+    // ---------- Profil ----------
+    async function loadProfil() {
+      const [me, docs] = await Promise.all([api("/api/patient/me"), api("/api/doctors?specialty=medicina_familie", { auth: false })]);
+      $("alergii").value = me.allergies;
+      $("cronice").value = me.chronic_conditions;
+      $("medicFamilie").innerHTML = `<option value="">-- niciunul --</option>` + docs.map(d =>
+        `<option value="${d.id}" ${me.family_doctor && me.family_doctor.id === d.id ? "selected" : ""}>${esc(d.name)} - ${esc(d.clinic)}</option>`).join("");
+    }
+    $("profilForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        await api("/api/patient/me", { method: "PATCH", body: {
+          allergies: $("alergii").value.trim(), chronic_conditions: $("cronice").value.trim(),
+          family_doctor_id: $("medicFamilie").value ? Number($("medicFamilie").value) : null } });
+        toast("Profil salvat.");
+      } catch (err) { toast(err.message, "err"); }
+    });
+
+    // ---------- Recomandare medic ----------
+    $("recForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $("btnRec").disabled = true;
+      $("recOut").innerHTML = `<div class="ai-box"><span class="spinner"></span>Analizez...</div>`;
+      try {
+        const r = await api("/api/ai/recommend", { method: "POST", body: { symptoms: $("simptome").value } });
+        $("recOut").innerHTML = r.urgent
+          ? `<div class="alert" style="font-size:15px">${esc(r.message)}</div>`
+          : `<div class="ai-box"><h3>Recomandare: ${esc(r.specialty_label)}</h3>
+               ${r.reasoning ? `<p>${esc(r.reasoning)}</p>` : ""}
+               ${r.doctors.length ? doctorCards(r.doctors) : `<p class="muted">Nu avem încă medici cu această specializare în platformă.</p>`}
+               <div class="disclaimer">Recomandarea este orientativă (${r.method === "llm" ? "AI" : "reguli"}) și nu înlocuiește consultul medical.</div></div>`;
+      } catch (err) { $("recOut").innerHTML = `<div class="error-box">${esc(err.message)}</div>`; }
+      finally { $("btnRec").disabled = false; }
+    });
+
+    loadRetete().catch(e => toast(e.message, "err"));
+    loadProfil().catch(() => {});
+  </script>
+</body>
+</html>
