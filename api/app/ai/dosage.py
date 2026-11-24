@@ -13,6 +13,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from . import prompts
 from .ollama_client import LLMClient, LLMError
 from .text import normalize
 
@@ -141,26 +142,9 @@ def extract_rules(text: str) -> dict:
 
 
 # ------------------------------------------------------------------ LLM
-SYSTEM_PROMPT = """Extragi posologia dintr-o indicație medicală scrisă în română și răspunzi DOAR cu JSON.
-Reguli:
-- dose_amount = cantitatea luată o dată (ex. "2 cp" -> 2). null dacă lipsește.
-- dose_unit: comprimat, capsula, mg, g, ml, picatura, plic, puf, lingurita, aplicare, fiola, unitate (null dacă lipsește).
-- times_per_day = de câte ori pe zi. "la 8 ore" -> 3, "1-0-1" -> 2.
-- interval_hours doar dacă textul spune explicit "la X ore".
-- duration_days: "7 zile" -> 7, "2 săptămâni" -> 14, "o lună" -> 30. null dacă lipsește.
-- timing: momentele zilei menționate explicit (dimineata, pranz, seara, noaptea). "1-0-1" -> ["dimineata","seara"].
-- meal_relation: inainte_de_masa, dupa_masa, in_timpul_mesei, pe_stomacul_gol sau nespecificat.
-- as_needed = true doar pentru "la nevoie", "la durere", "la febră".
-Nu inventa valori care nu apar în text."""
-
-FEW_SHOT = [
-    ("1 cp de 2 ori pe zi, după masă, 10 zile",
-     {"dose_amount": 1, "dose_unit": "comprimat", "times_per_day": 2, "interval_hours": None, "duration_days": 10,
-      "timing": [], "meal_relation": "dupa_masa", "as_needed": False}),
-    ("500 mg la 8 ore",
-     {"dose_amount": 500, "dose_unit": "mg", "times_per_day": 3, "interval_hours": 8, "duration_days": None,
-      "timing": [], "meal_relation": "nespecificat", "as_needed": False}),
-]
+# Promptul și exemplele few-shot sunt în prompts.py
+SYSTEM_PROMPT = prompts.DOSAGE_PROMPT
+FEW_SHOT = prompts.DOSAGE_FEW_SHOT
 
 
 def _sanitize(d: dict) -> dict:

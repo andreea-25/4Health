@@ -83,15 +83,15 @@ def test_recommend_and_red_flags(client, make_user):
 
 def test_chat_saves_history_and_handles_emergency(client, make_user, fake_llm):
     pat = make_user("patient")
-    r = client.post("/api/ai/chat", headers=pat, json={"message": "Cât trebuie să beau apă pe zi?"})
+    r = client.post("/api/ai/patient/chat", headers=pat, json={"message": "Cât trebuie să beau apă pe zi?"})
     assert r.status_code == 200
     sid = r.json()["session_id"]
-    client.post("/api/ai/chat", headers=pat, json={"message": "Și vara?", "session_id": sid})
+    client.post("/api/ai/patient/chat", headers=pat, json={"message": "Și vara?", "session_id": sid})
     s = client.get(f"/api/ai/chat/sessions/{sid}", headers=pat).json()
     assert len(s["messages"]) == 4
 
     n_calls = len(fake_llm.calls)
-    r = client.post("/api/ai/chat", json={"message": "nu mai pot respira"})  # vizitator
+    r = client.post("/api/ai/patient/chat", json={"message": "nu mai pot respira"})  # vizitator
     assert r.json()["urgent"] is True and "112" in r.json()["reply"]
     assert len(fake_llm.calls) == n_calls, "urgențele nu trebuie trimise la LLM"
     assert r.json()["session_id"] is None

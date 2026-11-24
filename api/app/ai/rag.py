@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
@@ -32,12 +32,14 @@ class Drug:
     aliases: list[str]
     classes: list[str]
     sections: dict[str, str]
+    interactions: list[dict] = field(default_factory=list)  # [{"with": [...], "severity": ..., "note": ...}]
 
 
 @lru_cache
 def drug_catalog() -> dict[str, Drug]:
     data = json.loads((KNOWLEDGE_DIR / "medicamente.json").read_text(encoding="utf-8"))
-    return {d["key"]: Drug(d["key"], d["name"], d["aliases"], d["classes"], d["sections"]) for d in data["drugs"]}
+    return {d["key"]: Drug(d["key"], d["name"], d["aliases"], d["classes"], d["sections"], d.get("interactions", []))
+            for d in data["drugs"]}
 
 
 def match_drug(name: str) -> Drug | None:

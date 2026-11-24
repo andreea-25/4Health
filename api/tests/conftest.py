@@ -31,6 +31,8 @@ class FakeLLM:
             data = dosage.extract_rules(user)
         elif "specialty" in props and "reasoning" in props:
             data = {"specialty": triage.classify_rules(user), "reasoning": "test"}
+        elif "key_points" in props:
+            data = {"summary": "Rezumat clinic test.", "key_points": ["punct 1", "punct 2"]}
         elif "medications" in props:
             n = user.count('"nume"')
             data = {"summary": "Rezumat test.",

@@ -47,6 +47,8 @@ Design choices worth noting:
 | **Structured outputs** (`format: <JSON Schema>` in Ollama) everywhere | Small models (2-4B) are unreliable at free-form JSON; schema-constrained decoding makes outputs parseable, and enums prevent hallucinated specialties. |
 | **Safety layer runs before the LLM** | Emergencies ("chest pain", "can't breathe", self-harm…) get a fixed 112 message. They are never sent to a 3B model, and a test checks this. |
 | **Rule-based baselines for every LLM task** | Each LLM task can be compared against a simple baseline, and the rules serve as a fallback when Ollama is down. |
+| **Separate agents for patients and doctors** | The patient agent explains and advises, never diagnoses, and sees only that patient's own data. The doctor agent is clinical decision support: it can access only that doctor's patients and uses deterministic tools (patient summary, allergy and interaction checks at prescribing). Red-flag interception applies only to patients, so a doctor describing "a patient with chest pain" is not told to call 112. |
+| **All prompts in one file** ([`api/app/ai/prompts.py`](api/app/ai/prompts.py)) | Prompts are the main lever for model behaviour. Keeping them together makes prompt changes easy to review and to evaluate. |
 | **Doctor's original instructions always shown** | The LLM rephrases and never replaces the doctor's dosage text. |
 | **Pluggable vector backend** (`VECTOR_BACKEND`) | `pgvector`: cosine search in SQL. `python`: embeddings stored as JSON in plain PostgreSQL and searched exhaustively in Python, which is enough for a corpus of hundreds of chunks and needs no extensions. The test suite runs on both. |
 | **Multilingual embeddings (bge-m3)** | Romanian queries; English-centric embedding models retrieve poorly. |
@@ -71,7 +73,7 @@ You need four things installed. Everything else is automated.
 **Windows**: clone the repo, then double-click **`setup.bat`** (or run it from a terminal):
 
 ```powershell
-git clone https://github.com/<your-username>/4Health.git
+git clone https://github.com/andreea-25/4Health.git
 cd 4Health
 .\setup.bat
 ```
@@ -79,7 +81,7 @@ cd 4Health
 **Linux / macOS**:
 
 ```bash
-git clone https://github.com/<your-username>/4Health.git
+git clone https://github.com/andreea-25/4Health.git
 cd 4Health
 ./setup.sh
 ```
@@ -171,21 +173,28 @@ Each run saves all predictions as JSON plus a Markdown summary in `api/eval/resu
 
 ### Results (GTX 1050 4 GB, 8 GB RAM)
 
-<!-- Fill in after running the commands above. -->
+**Retrieval** (22 queries, recall@4 and MRR)
 
-| Dosage extraction | exact match | field acc. | latency |
+| Method | recall@4 | MRR | median latency |
+|---|---|---|---|
+| lexical | 0.82 | 0.652 | 20 ms |
+| embedding (bge-m3) | 1.00 | 0.955 | 117 ms |
+
+**Dosage extraction** (30 instructions)
+
+| Method | exact match | field acc. | median latency |
 |---|---|---|---|
 | rules (baseline) | 0.90 | 0.988 | <1 ms |
-| qwen2.5:3b | _TODO_ | | |
-| llama3.2:3b | _TODO_ | | |
+| qwen2.5:3b | 0.30 | 0.875 | 2839 ms |
 
-| Triage | red-flag recall | accuracy | macro-F1 | latency |
-|---|---|---|---|---|
-| rules (baseline) | 1.00 | 0.86 | 0.877 | <1 ms |
-| qwen2.5:3b | (same rules) | _TODO_ | | |
+**Triage** (45 cases; red-flag recall 1.00 and precision 1.00 for rules)
 
-> **Note on methodology:** the rule baselines were developed while looking at these datasets (for example, the eval revealed that *"durere **puternică** în piept"* slipped past the chest-pain regex, which was then fixed). The baseline numbers are therefore optimistic **dev-set** numbers. A fair comparison needs a held-out test set written by someone else; that is the next item on the roadmap.
+| Method | accuracy | macro-F1 | median latency |
+|---|---|---|---|
+| rules (baseline) | 0.86 | 0.877 | <1 ms |
+| qwen2.5:3b | 0.40 | 0.390 | 2761 ms |
 
+> **Note:** all numbers are on the development set. The rule baselines were developed while looking at these datasets, so they are optimistic. A held-out test set is on the roadmap.
 ---
 
 ## Project structure
@@ -203,7 +212,11 @@ api/
       rag.py             ingestion, vector search (pgvector or Python), lexical fallback
       prescription.py    interpretation pipeline
       triage.py          specialty classification + doctor lookup
-      chat.py            conversational assistant
+      prompts.py         ALL system prompts (edit agent behaviour here)
+      agents/
+        base.py          shared: chat sessions, history, RAG retrieval
+        patient.py       patient agent (explanations/advice, no diagnosis)
+        doctor.py        doctor agent + tools: patient summary, allergy & interaction check
     seed.py            demo data + RAG indexing
   knowledge/           drug summaries + general advice (RAG corpus)
   eval/                datasets, run_eval.py, results/

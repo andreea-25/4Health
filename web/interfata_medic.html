@@ -46,6 +46,7 @@
       <h3 style="margin:18px 0 10px">Medicamente (Rp/)</h3>
       <div id="items"></div>
       <button type="button" class="btn-sm ghost" id="addItem">+ Adaugă medicament</button>
+      <div id="safetyBox" style="margin-top:12px"></div>
 
       <div class="field" style="margin-top:16px"><label>Observații</label><textarea name="notes" style="min-height:50px"></textarea></div>
       <button type="submit" class="submit-btn" id="btnSave">Salvează rețeta</button>
@@ -101,7 +102,12 @@
         <div class="muted">${p.cnp ? "CNP " + esc(p.cnp) + " · " : ""}${esc(p.email)}</div>
         ${p.allergies ? `<span class="pill warn">Alergii: ${esc(p.allergies)}</span>` : ""}
         ${p.chronic_conditions ? `<span class="pill">${esc(p.chronic_conditions)}</span>` : ""}
-        <div style="margin-top:8px"><button class="btn-sm" data-new="${p.id}">Rețetă nouă</button></div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn-sm" data-new="${p.id}">Rețetă nouă</button>
+          <button class="btn-sm ghost" data-summary="${p.id}">✨ Rezumat AI</button>
+          <a class="btn-sm ghost" style="text-decoration:none" href="ai_chat.html?patient=${p.id}">Întreabă asistentul</a>
+        </div>
+        <div class="summary-out" id="sum-${p.id}"></div>
       </div>`;
     }
 
@@ -117,7 +123,40 @@
         patients.map(p => `<option value="${p.id}" ${p.id == selected ? "selected" : ""}>${esc(p.name)}${p.cnp ? " (" + p.cnp + ")" : ""}</option>`).join("");
     }
 
+    // ---------- Unealta 1+3: rezumatul AI al pacientului ----------
+    function renderAlerts(a) {
+      const items = [
+        ...a.allergy_alerts.map(x => `<div class="alert">⚠️ <strong>Alergie:</strong> ${esc(x.message)}</div>`),
+        ...a.interactions.map(i => `<div class="alert ${i.severity === "majora" ? "" : "alert-mild"}">💊 <strong>Interacțiune ${esc(i.severity)}:</strong> ${esc(i.drug_a)} + ${esc(i.drug_b)} — ${esc(i.note)}</div>`),
+      ];
+      if (a.unknown_drugs && a.unknown_drugs.length) items.push(`<div class="muted">Neverificate (lipsesc din baza de cunoștințe): ${a.unknown_drugs.map(esc).join(", ")}</div>`);
+      return items.join("") || `<div class="ok-box" style="margin-top:6px">✓ Nicio alergie sau interacțiune cunoscută.</div>`;
+    }
+
+    async function showSummary(pid) {
+      const box = $("sum-" + pid);
+      if (box.dataset.open) { box.innerHTML = ""; delete box.dataset.open; return; }
+      box.dataset.open = "1";
+      box.innerHTML = `<div class="ai-box"><span class="spinner"></span>Se generează rezumatul...</div>`;
+      try {
+        const s = await api(`/api/ai/doctor/patients/${pid}/summary`);
+        const meds = s.facts.active_medications;
+        box.innerHTML = `<div class="ai-box">
+          <h3>Rezumat clinic</h3>
+          ${s.summary ? `<p>${esc(s.summary)}</p>` : `<p class="muted">${esc(s.llm_error || "Rezumat AI indisponibil; mai jos sunt datele din fișă.")}</p>`}
+          ${s.key_points.length ? `<ul>${s.key_points.map(k => `<li>${esc(k)}</li>`).join("")}</ul>` : ""}
+          <p><strong>Tratament activ:</strong> ${meds.length ? meds.map(m => `${esc(m.drug_name)} <span class="muted">(până la ${esc(m.until)}, ${esc(m.prescribed_by)})</span>`).join("; ") : "niciunul"}</p>
+          ${renderAlerts(s.alerts)}
+          <div class="disclaimer">Sprijin pentru decizie; verificați informațiile. ${s.model ? "Model: " + esc(s.model) : ""}</div>
+        </div>`;
+      } catch (err) {
+        box.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
+      }
+    }
+
     document.addEventListener("click", (e) => {
+      const sb = e.target.closest("[data-summary]");
+      if (sb) return showSummary(sb.dataset.summary);
       const b = e.target.closest("[data-new]");
       if (!b) return;
       fillPatientSelect(b.dataset.new);
@@ -137,7 +176,8 @@
     // ---------- Formular rețetă ----------
     function addItem() {
       const node = $("itemTpl").content.firstElementChild.cloneNode(true);
-      node.querySelector(".remove").onclick = () => { if ($("items").children.length > 1) node.remove(); };
+      node.querySelector(".remove").onclick = () => { if ($("items").children.length > 1) { node.remove(); runSafety(); } };
+      node.querySelector('[data-k="drug_name"]').addEventListener("input", runSafety);
       const adm = node.querySelector('[data-k="administration"]');
       const dur = node.querySelector('[data-k="duration"]');
       const preview = node.querySelector(".ai-preview");
@@ -160,6 +200,24 @@
       dur.addEventListener("input", update);
       $("items").appendChild(node);
     }
+    // ---------- Unealta 2: verificarea alergiilor și interacțiunilor la prescriere ----------
+    let safetyTimer, lastSafety = null;
+    function runSafety() {
+      clearTimeout(safetyTimer);
+      safetyTimer = setTimeout(async () => {
+        const pid = Number($("selPacient").value);
+        const drugs = [...document.querySelectorAll('#items [data-k="drug_name"]')].map(i => i.value.trim()).filter(v => v.length >= 3);
+        if (!pid || !drugs.length) { $("safetyBox").innerHTML = ""; lastSafety = null; return; }
+        try {
+          lastSafety = await api("/api/ai/doctor/safety-check", { method: "POST", body: { patient_id: pid, drugs } });
+          $("safetyBox").innerHTML = `<div class="ai-box" style="margin-top:0"><h3 style="font-size:15px">Verificare de siguranță</h3>
+            ${renderAlerts(lastSafety)}
+            ${lastSafety.active_medications.length ? `<div class="muted" style="margin-top:6px">Tratament activ al pacientului: ${lastSafety.active_medications.map(esc).join(", ")}</div>` : ""}</div>`;
+        } catch { $("safetyBox").innerHTML = ""; }
+      }, 800);
+    }
+    $("selPacient").addEventListener("change", runSafety);
+
     $("addItem").onclick = addItem;
     addItem();
     $("dataEliberare").valueAsDate = new Date();
@@ -172,6 +230,8 @@
       body.patient_id = Number(body.patient_id);
       body.items = [...$("items").children].map(row =>
         Object.fromEntries([...row.querySelectorAll("[data-k]")].map(i => [i.dataset.k, i.value.trim()])));
+      const nAlerts = lastSafety ? lastSafety.allergy_alerts.length + lastSafety.interactions.length : 0;
+      if (nAlerts && !confirm(`Există ${nAlerts} alertă(e) de siguranță pentru această rețetă. Salvați oricum?`)) return;
       $("btnSave").disabled = true;
       try {
         await api("/api/doctor/prescriptions", { method: "POST", body });
@@ -180,6 +240,7 @@
         $("items").innerHTML = "";
         addItem();
         $("dataEliberare").valueAsDate = new Date();
+        $("safetyBox").innerHTML = ""; lastSafety = null;
         loadPatients();
         showTab("sectEmise");
       } catch (err) { toast(err.message, "err"); }

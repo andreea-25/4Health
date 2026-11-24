@@ -16,6 +16,7 @@
     #chat-box { flex: 1; background: #fff; display: flex; flex-direction: column; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.08); overflow: hidden; min-width: 0; }
     #chat-header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; gap: 8px; }
     #chat-header h2 { margin: 0; font-size: 17px; }
+    #patientSel { padding: 6px 8px; border-radius: 8px; border: 1px solid #cbd5e1; max-width: 220px; }
     #status { font-size: 12px; }
     #messages { flex: 1; padding: 14px; overflow-y: auto; background: #f9fbff; display: flex; flex-direction: column; }
     .message { padding: 10px 12px; border-radius: 12px; margin: 6px 0; max-width: 82%; word-wrap: break-word; line-height: 1.45; white-space: pre-wrap; }
@@ -47,7 +48,8 @@
 
     <div id="chat-box">
       <div id="chat-header">
-        <h2>Asistent AI</h2>
+        <h2 id="chatTitle">Asistent AI</h2>
+        <select id="patientSel" class="hidden" title="Pacientul despre care discutați"></select>
         <span id="status" class="muted"></span>
         <button id="newChatBtn" class="btn-sm ghost">+ Conversație nouă</button>
       </div>
@@ -67,18 +69,23 @@
     let sessionId = null;
     let visitorHistory = [];   // pentru vizitatori, istoricul stă doar în pagină
     const loggedIn = !!Auth.token;
+    // Fiecare rol are agentul lui: medicul -> asistent clinic, pacient/vizitator -> explicații și sfaturi
+    const IS_DOCTOR = Auth.role === "doctor";
+    const CHAT_URL = IS_DOCTOR ? "/api/ai/doctor/chat" : "/api/ai/patient/chat";
 
     if (loggedIn) { $("userName").textContent = Auth.name; $("backLink").href = Auth.homeFor(Auth.role); }
 
     const SUGGESTIONS = Auth.role === "patient"
       ? ["Explică-mi pe scurt ce medicamente iau acum", "Am uitat o doză, ce fac?", "Mă doare stomacul după masă, la ce medic să merg?"]
-      : Auth.role === "doctor"
-      ? ["Interacțiuni importante ale enalaprilului", "Ce atenționări are metforminul?"]
+      : IS_DOCTOR
+      ? ["Rezumă pacientul selectat", "Există interacțiuni în tratamentul lui actual?", "Ce atenționări are metforminul?"]
       : ["Cum iau corect un antibiotic?", "Am palpitații des, la ce medic să merg?", "Cum îmi pot scădea tensiunea?"];
 
     function welcome() {
       messages.innerHTML = "";
-      addMessage("Bună! Sunt Iris, asistentul AI 4Health. Te pot ajuta cu informații despre rețete și medicamente, sfaturi generale și cu alegerea medicului potrivit. Nu pun diagnostice - pentru urgențe sună la 112.", "ai");
+      addMessage(IS_DOCTOR
+        ? "Bună ziua! Sunt Iris, asistentul clinic 4Health. Alegeți sus un pacient ca să discutăm despre istoricul, tratamentul activ și alertele lui, sau întrebați-mă despre medicamente. Ofer sprijin pentru decizie; decizia clinică vă aparține."
+        : "Bună! Sunt Iris, asistentul AI 4Health. Te pot ajuta cu informații despre rețete și medicamente, sfaturi generale și cu alegerea medicului potrivit. Nu pun diagnostice - pentru urgențe sună la 112.", "ai");
       const s = document.createElement("div");
       s.className = "suggestions";
       s.innerHTML = SUGGESTIONS.map(q => `<button>${esc(q)}</button>`).join("");
@@ -114,7 +121,10 @@
       pending.innerHTML = `<span class="spinner"></span>Iris se gândește...`;
       $("sendBtn").disabled = true;
       try {
-        const r = await api("/api/ai/chat", { method: "POST", body: { message: text, session_id: sessionId, history: loggedIn ? null : visitorHistory } });
+        const body = IS_DOCTOR
+          ? { message: text, session_id: sessionId, patient_id: $("patientSel").value ? Number($("patientSel").value) : null }
+          : { message: text, session_id: sessionId, history: loggedIn ? null : visitorHistory };
+        const r = await api(CHAT_URL, { method: "POST", body });
         pending.remove();
         addMessage(r.reply, "ai", { urgent: r.urgent, html: metaHtml(r) });
         if (loggedIn) { if (!sessionId) { sessionId = r.session_id; loadSessions(); } }
@@ -163,6 +173,20 @@
       $("status").textContent = h.ollama === "ok" ? (h.llm_ready ? `● ${h.llm_model}` : `⚠ lipsește modelul ${h.llm_model}`) : "⚠ Ollama oprit";
       $("status").style.color = h.ollama === "ok" && h.llm_ready ? "#16a34a" : "#b45309";
     }).catch(() => {});
+
+    // Medicul alege pacientul despre care discută (doar pacienții lui)
+    if (IS_DOCTOR) {
+      $("chatTitle").textContent = "Asistent clinic";
+      document.querySelector(".topbar .brand").lastChild.textContent = "Iris · asistent clinic";
+      const sel = $("patientSel");
+      sel.classList.remove("hidden");
+      api("/api/doctor/patients").then(ps => {
+        sel.innerHTML = `<option value="">— fără pacient —</option>` + ps.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+        const pre = new URLSearchParams(location.search).get("patient");
+        if (pre) sel.value = pre;
+      }).catch(() => {});
+      sel.onchange = () => { sessionId = null; welcome(); loadSessions(); };  // pacient nou = conversație nouă
+    }
 
     welcome();
     loadSessions().catch(() => {});

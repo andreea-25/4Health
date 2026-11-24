@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..models import SPECIALTIES, DoctorProfile, PatientProfile, User
 from ..serializers import doctor_out
+from . import prompts
 from .ollama_client import LLMClient, LLMError
 from .safety import check_red_flags
 from .text import normalize
@@ -41,13 +42,8 @@ TRIAGE_SCHEMA = {
     "required": ["specialty", "reasoning"],
 }
 
-SYSTEM_PROMPT = (
-    "Ești un asistent de triaj pentru o clinică din România. Pe baza simptomelor descrise, alegi specializarea "
-    "medicală cea mai potrivită pentru o primă consultație. Dacă simptomele sunt vagi, generale sau implică mai multe "
-    "sisteme, alege 'medicina_familie'. Dacă pacientul vorbește despre un copil, alege 'pediatrie'. "
-    "'reasoning' = o propoziție scurtă în română, fără diagnostic. Specializări permise: "
-    + ", ".join(f"{k} ({v})" for k, v in SPECIALTIES.items())
-)
+# Promptul e în prompts.py (TRIAGE_PROMPT); aici doar completăm lista de specializări.
+SYSTEM_PROMPT = prompts.TRIAGE_PROMPT.format(specialties=", ".join(f"{k} ({v})" for k, v in SPECIALTIES.items()))
 
 
 def classify_rules(text: str) -> str:

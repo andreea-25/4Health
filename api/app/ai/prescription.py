@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from ..models import Prescription
-from . import dosage, rag
+from . import dosage, prompts, rag
 from .ollama_client import LLMClient
 from .safety import DISCLAIMER, allergy_alert
 
@@ -42,16 +42,8 @@ EXPLAIN_SCHEMA = {
     "required": ["summary", "medications", "questions_for_doctor"],
 }
 
-SYSTEM_PROMPT = """Ești Iris, asistentul medical al platformei 4Health. Explici unui pacient rețeta primită de la medic.
-Reguli stricte:
-- Scrii în limba română, simplu și cald, fără jargon.
-- Folosești DOAR informațiile din RETETA și din CONTEXT. Nu inventa indicații, doze sau efecte.
-- NU schimbi dozele, orele sau durata scrise de medic; le reformulezi doar mai clar.
-- NU recomanzi alte medicamente și nu pui diagnostice.
-- Dacă o informație lipsește din CONTEXT, scrie că pacientul să întrebe medicul sau farmacistul.
-- "warnings": 1-3 atenționări scurte, cele mai importante, din CONTEXT.
-- "questions_for_doctor": 1-3 întrebări utile pe care pacientul le-ar putea pune medicului.
-Răspunzi doar cu JSON conform schemei."""
+# Promptul e în prompts.py (PRESCRIPTION_EXPLAIN_PROMPT)
+SYSTEM_PROMPT = prompts.PRESCRIPTION_EXPLAIN_PROMPT
 
 
 def _facts(rx: Prescription) -> dict:

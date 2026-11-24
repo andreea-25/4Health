@@ -61,3 +61,7 @@ input[type=email], input[type=number] { width: 100%; padding: 12px 14px; border-
 .panel input[type=email], .panel select { padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 15px; width: 100%; }
 
 .panel *, .panel *::before, .panel *::after { box-sizing: border-box; }
+
+/* Alerte de severitate moderată/minoră (cele majore folosesc .alert roșu) */
+.alert.alert-mild { background: #fffbeb; border-left-color: #f59e0b; color: #92400e; }
+.summary-out .ai-box { margin-top: 10px; }

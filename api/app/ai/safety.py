@@ -60,14 +60,20 @@ def check_red_flags(text: str) -> SafetyResult:
     return SafetyResult(urgent=True, flags=flags, message=msg)
 
 
-def allergy_alert(allergies: str, drug_key: str | None, drug_classes: list[str], drug_label: str) -> str | None:
-    """Avertisment dacă alergiile declarate se potrivesc cu medicamentul sau clasa lui."""
+def allergy_alert(allergies: str, drug_key: str | None, drug_classes: list[str], drug_label: str,
+                  audience: str = "patient") -> str | None:
+    """Avertisment dacă alergiile declarate se potrivesc cu medicamentul sau clasa lui.
+    audience="patient" -> formulare pentru pacient; "doctor" -> formulare clinică pentru medic."""
     if not allergies.strip():
         return None
     a = normalize(allergies)
     terms = [t for t in [drug_key, *drug_classes] if t]
     hits = [t for t in terms if normalize(t) in a or (len(t) > 6 and normalize(t)[:6] in a)]
-    if hits:
-        return (f"Atenție: în profil ai declarat alergie la „{allergies.strip()}”, iar {drug_label} face parte din "
-                f"categoria {', '.join(sorted(set(hits)))}. Discută cu medicul sau farmacistul ÎNAINTE să îl iei.")
-    return None
+    if not hits:
+        return None
+    cats = ", ".join(sorted(set(hits)))
+    if audience == "doctor":
+        return (f"Pacientul are alergie declarată la „{allergies.strip()}”; {drug_label} aparține categoriei {cats}. "
+                f"Reevaluați indicația sau alegeți o alternativă.")
+    return (f"Atenție: în profil ai declarat alergie la „{allergies.strip()}”, iar {drug_label} face parte din "
+            f"categoria {cats}. Discută cu medicul sau farmacistul ÎNAINTE să îl iei.")
